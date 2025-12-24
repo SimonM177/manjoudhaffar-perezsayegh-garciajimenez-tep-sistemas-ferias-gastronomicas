@@ -1,0 +1,24 @@
+services:
+  db-usuarios:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: db_usuarios
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_usuarios_/var/lib/postgresql/data
+
+  microservicio-usuarios:
+    build: ./microservicio-usuarios
+    depends_on:
+      - db-usuarios
+    environment:
+      DB_HOST: db-usuarios
+      JWT_SECRET: mi_secreto_jwt
+    ports:
+      - "3001:3001"
+
+volumes:
+  postgres_usuarios_data:

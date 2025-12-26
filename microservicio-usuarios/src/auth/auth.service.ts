@@ -25,9 +25,10 @@ export class AuthService {
 
     async register(email: string, password: string, fullname: string, role: string): Promise<{message: string}> {
         
+        const rolAlt = role.trim().toLowerCase();
         // Verificar el rol que se esta ingresando
         const rolesValidos: string[] = ['cliente', 'emprendedor', 'organizador'];
-        if(rolesValidos.includes(role)) {
+        if(!rolesValidos.includes(rolAlt)) {
             throw new BadRequestException('Rol no soportado por el sistema.');
         }
 
@@ -49,7 +50,7 @@ export class AuthService {
             email,
             password_hash: hashedPassword,
             fullname,
-            role: role as any,
+            role: rolAlt as any,
         });
 
         await this.userRepository.save(user);

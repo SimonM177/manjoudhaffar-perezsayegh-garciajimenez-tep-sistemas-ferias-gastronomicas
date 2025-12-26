@@ -9,7 +9,7 @@ export class RegisterDTO {
     email: string;
 
     @MinLength(8)
-    password_hash: string;
+    password: string;
 
     @IsEnum(['cliente', 'emprendedor', 'organizador'])
     role: Rol;

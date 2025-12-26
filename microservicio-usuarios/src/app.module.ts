@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { ApiLog } from './logs/entities/api-log.entity';
 import { LogService } from './logs/logs.service';
 import { LogsModule } from './logs/logs.module';
+import { UsersModule } from './users/users.module';
 
 /* 
 @Module({
@@ -30,6 +31,7 @@ import { LogsModule } from './logs/logs.module';
     TypeOrmModule.forFeature([User, ApiLog]),
     // UsersModule,
     AuthModule,
+    UsersModule,
     LogsModule,
   ],
   // providers: [LogService],

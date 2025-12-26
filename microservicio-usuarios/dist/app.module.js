@@ -13,6 +13,7 @@ const user_entity_1 = require("./users/entities/user.entity");
 const auth_module_1 = require("./auth/auth.module");
 const api_log_entity_1 = require("./logs/entities/api-log.entity");
 const logs_module_1 = require("./logs/logs.module");
+const users_module_1 = require("./users/users.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -32,6 +33,7 @@ exports.AppModule = AppModule = __decorate([
             }),
             typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, api_log_entity_1.ApiLog]),
             auth_module_1.AuthModule,
+            users_module_1.UsersModule,
             logs_module_1.LogsModule,
         ],
     })

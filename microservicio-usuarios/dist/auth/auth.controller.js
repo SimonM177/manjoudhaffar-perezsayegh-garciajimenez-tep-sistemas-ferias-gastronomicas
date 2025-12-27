@@ -53,11 +53,15 @@ let AuthController = class AuthController {
     async validarUsuario(data) {
         try {
             const result = await this.authService.validarUsuarioRol(data.userId, data.role);
-            await this.logService.createLog('auth.validar_usuario', 'RPC', data.userId, 200, 'Validación de usuario exitosa');
+            if (!result.valid) {
+                await this.logService.createLog('auth_validate_user', 'RPC', data.userId, 403, 'Rol no autorizado para la acción');
+                return { status: 'error', message: 'Rol no autorizado para la acción', statusCode: 403 };
+            }
+            await this.logService.createLog('auth_validate_user', 'RPC', data.userId, 200, 'Validación de usuario exitosa');
             return { status: 'success', data: result };
         }
         catch (error) {
-            await this.logService.createLog('auth.validar_usuario', 'RPC', data.userId, 500, 'Error al validar usuario');
+            await this.logService.createLog('auth_validate_user', 'RPC', data.userId, 500, 'Error al validar usuario');
             return { status: 'error', message: 'Error al validar usuario', statusCode: 500 };
         }
     }
@@ -78,7 +82,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 __decorate([
-    (0, microservices_1.MessagePattern)('auth.validar_usuario'),
+    (0, microservices_1.MessagePattern)('auth_validate_user'),
     __param(0, (0, microservices_1.Payload)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),

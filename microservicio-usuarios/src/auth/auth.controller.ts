@@ -56,14 +56,20 @@ export class AuthController {
     }
   }
 
-  @MessagePattern('auth.validar_usuario')
+  @MessagePattern('auth_validate_user')
   async validarUsuario(@Payload() data: { userId: string; role: string }) {
     try {
       const result = await this.authService.validarUsuarioRol(data.userId, data.role);
-      await this.logService.createLog('auth.validar_usuario', 'RPC', data.userId, 200, 'Validación de usuario exitosa');
+
+      if(!result.valid) {
+        await this.logService.createLog('auth_validate_user', 'RPC', data.userId, 403, 'Rol no autorizado para la acción');
+        return { status: 'error', message: 'Rol no autorizado para la acción', statusCode: 403 };
+      }
+
+      await this.logService.createLog('auth_validate_user', 'RPC', data.userId, 200, 'Validación de usuario exitosa');
       return { status: 'success', data: result };
     } catch (error) {
-      await this.logService.createLog('auth.validar_usuario', 'RPC', data.userId, 500, 'Error al validar usuario');
+      await this.logService.createLog('auth_validate_user', 'RPC', data.userId, 500, 'Error al validar usuario');
       return { status: 'error', message: 'Error al validar usuario', statusCode: 500 };
     }
   }

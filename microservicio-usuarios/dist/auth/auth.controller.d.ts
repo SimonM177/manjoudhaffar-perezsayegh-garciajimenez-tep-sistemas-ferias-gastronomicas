@@ -44,16 +44,16 @@ export declare class AuthController {
         role: string;
     }): Promise<{
         status: string;
+        message: string;
+        statusCode: number;
+        data?: undefined;
+    } | {
+        status: string;
         data: {
             valid: boolean;
             user?: any;
         };
         message?: undefined;
         statusCode?: undefined;
-    } | {
-        status: string;
-        message: string;
-        statusCode: number;
-        data?: undefined;
     }>;
 }

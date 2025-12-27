@@ -4,6 +4,7 @@ import { MICROSERVICE_USERS, USERS_SERVICE } from './common/constants';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { StallsModule } from './stalls/stalls.module';
 @Module({
   imports: [
 
@@ -27,6 +28,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     ]),
     AuthModule,
     UsersModule,
+    StallsModule,
     // El resto de modulos
   ],
   // controllers: [AppController],

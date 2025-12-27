@@ -14,28 +14,36 @@ const auth_module_1 = require("./auth/auth.module");
 const api_log_entity_1 = require("./logs/entities/api-log.entity");
 const logs_module_1 = require("./logs/logs.module");
 const users_module_1 = require("./users/users.module");
+const config_1 = require("@nestjs/config");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forRoot({
-                type: 'postgres',
-                host: process.env.DB_HOST || 'localhost',
-                port: parseInt(process.env.DB_PORT || '5433', 10),
-                username: process.env.DB_USERNAME || 'postgres',
-                password: process.env.DB_PASSWORD || 'PostgresBD',
-                database: process.env.DB_NAME || 'auth_service',
-                entities: [user_entity_1.User, api_log_entity_1.ApiLog],
-                synchronize: false,
-                logging: true,
+            config_1.ConfigModule.forRoot({
+                isGlobal: true,
+            }),
+            typeorm_1.TypeOrmModule.forRootAsync({
+                imports: [config_1.ConfigModule],
+                useFactory: (configService) => ({
+                    type: 'postgres',
+                    host: configService.get('DB_HOST'),
+                    port: configService.get('DB_PORT'),
+                    username: configService.get('DB_USERNAME'),
+                    password: configService.get('DB_PASSWORD'),
+                    database: configService.get('DB_NAME'),
+                    entities: [user_entity_1.User, api_log_entity_1.ApiLog],
+                    synchronize: false,
+                    logging: true,
+                }),
+                inject: [config_1.ConfigService],
             }),
             typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, api_log_entity_1.ApiLog]),
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
             logs_module_1.LogsModule,
-        ],
+        ]
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

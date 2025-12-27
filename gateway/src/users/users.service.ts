@@ -12,7 +12,6 @@ export class UsersService {
     ) {}
 
     async getProfile(userId: string) {
-        console.log('📤 [Gateway] Enviando userId:', userId); 
         const response = await firstValueFrom(
             this.usersClient.send('users_get_profile', {userId}),
         );

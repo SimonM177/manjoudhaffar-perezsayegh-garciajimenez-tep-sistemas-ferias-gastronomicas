@@ -3,16 +3,25 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { MICROSERVICE_USERS, USERS_SERVICE } from './common/constants';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 @Module({
   imports: [
-    ClientsModule.register([
+
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+
+    ClientsModule.registerAsync([
       {
         name: USERS_SERVICE,
-        transport: Transport.TCP,
-        options: { 
-          host: process.env.USERS_HOST || 'localhost', 
-          port: parseInt(process.env.USUARIOS_PORT ?? "3001", 10), 
-        },
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get('USERS_HOST'),
+            port: configService.get('USERS_PORT'),
+          },
+        }),
+        inject: [ConfigService],
       },
       // Otros microservicios aqui
     ]),

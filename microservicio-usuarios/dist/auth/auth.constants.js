@@ -2,6 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.jwtConstants = void 0;
 exports.jwtConstants = {
-    secret: process.env.JWT_SECRET || 'mi_secreto_super_secreto',
+    secret: process.env.JWT_SECRET,
 };
 //# sourceMappingURL=auth.constants.js.map

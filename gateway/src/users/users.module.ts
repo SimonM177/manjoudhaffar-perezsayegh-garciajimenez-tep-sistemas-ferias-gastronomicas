@@ -3,17 +3,21 @@ import { ClientsModule, Transport } from "@nestjs/microservices";
 import { UsersController } from "./users.controller";
 import { UsersService } from "./users.service";
 import { USERS_SERVICE } from "src/common/constants";
+import { ConfigService } from "@nestjs/config";
 
 @Module({
     imports: [
-        ClientsModule.register([
+        ClientsModule.registerAsync([
             {
                 name: USERS_SERVICE,
-                transport: Transport.TCP,
-                options: {
-                    host: process.env.USERS_HOST || 'localhost',
-                    port: parseInt(process.env.USUARIOS_PORT ?? '3001', 10),
-                },
+                useFactory: (configService: ConfigService) => ({
+                    transport: Transport.TCP,
+                    options: {
+                        host: configService.get('USERS_HOST'),
+                        port: configService.get('USERS_PORT'),
+                    },
+                }),
+                inject: [ConfigService],
             },
         ]),
     ],

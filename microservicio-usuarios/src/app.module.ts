@@ -6,6 +6,7 @@ import { ApiLog } from './logs/entities/api-log.entity';
 import { LogService } from './logs/logs.service';
 import { LogsModule } from './logs/logs.module';
 import { UsersModule } from './users/users.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 /* 
 @Module({
@@ -15,8 +16,11 @@ import { UsersModule } from './users/users.module';
 })
 */ 
 
-@Module({
+/*@Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'localhost',
@@ -36,5 +40,33 @@ import { UsersModule } from './users/users.module';
   ],
   // providers: [LogService],
   // exports: [LogService],
+})*/
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get('DB_HOST'),
+        port: configService.get('DB_PORT'),
+        username: configService.get('DB_USERNAME'),
+        password: configService.get('DB_PASSWORD'),
+        database: configService.get('DB_NAME'),
+        entities: [User, ApiLog],
+        synchronize: false,
+        logging: true,
+      }),
+      inject: [ConfigService],
+    }),
+    TypeOrmModule.forFeature([User, ApiLog]),
+    AuthModule,
+    UsersModule,
+    LogsModule,
+  ]
 })
 export class AppModule {}

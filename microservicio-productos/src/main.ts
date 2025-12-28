@@ -3,19 +3,28 @@ import { AppModule } from './app.module';
 import { Transport } from '@nestjs/microservices';
 import * as dotenv from 'dotenv';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 dotenv.config();
 async function bootstrap() {
-  const app = await NestFactory.createMicroservice(AppModule, {
+  const app = await NestFactory.create(AppModule);
+
+  const configService = app.get(ConfigService);
+  
+  const microservice = app.connectMicroservice({
     transport: Transport.TCP,
-    options: {port: 3003},
+    options: {
+      host: configService.get('HOST'),
+      port: configService.get('PORT'),
+    },
   });
 
   app.useGlobalPipes(new ValidationPipe({
-    whitelist: true, // Eliminar propiedades no definidas en los DTO
-    forbidNonWhitelisted: true, // Rechazar requests con propiedades extras
+    whitelist: true,
+    forbidNonWhitelisted: true,
     transform: true,
   }));
-  await app.listen();
+
+  await app.startAllMicroservices();
 }
 bootstrap();

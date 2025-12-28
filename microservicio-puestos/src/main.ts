@@ -2,12 +2,22 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 import { Transport } from '@nestjs/microservices';
+import { ConfigService } from '@nestjs/config';
 dotenv.config();
+
 async function bootstrap() {
-  const app = await NestFactory.createMicroservice(AppModule, {
+  const app = await NestFactory.create(AppModule);
+
+  const configService = app.get(ConfigService);
+  
+  app.connectMicroservice({
     transport: Transport.TCP,
-    options: {port: 3002},
+    options: {
+      host: configService.get('HOST'),
+      port: configService.get('PORT'),
+    },
   });
-  await app.listen();
+
+  await app.startAllMicroservices();
 }
 bootstrap();

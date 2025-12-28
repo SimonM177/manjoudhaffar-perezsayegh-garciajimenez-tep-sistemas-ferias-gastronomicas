@@ -93,4 +93,39 @@ export class StallsController {
             return { status: 'error', message: error.message, statusCode: 400 };
         }
     }
+
+    // Para el microservicio de productos
+    @MessagePattern('stalls_validate_ownership')
+    async validateOwnership(@Payload() data: {stallId: string, userId: string}) {
+        try {
+            const stall = await this.stallsService.findOne(data.stallId);
+            
+            if (!stall) {
+                throw new Error('Puesto no encontrado');
+            }
+
+            if(stall.ownerId !== data.userId) {
+                throw new Error('No eres el propietario del puesto')
+            }
+
+            await this.logsService.createLog('stalls_validate_ownership', 'RPC', data.userId, 200, 'Validacion de ownership exitosa');
+            return { status: 'success', message: 'Validación exitosa' };
+        } catch (error) {
+            await this.logsService.createLog('stalls_validate_ownership', 'RPC', data.userId, 403, error.message);
+            return { status: 'error', message: error.message, statusCode: 403 };
+        }
+    }
+
+    // Para el catalogo
+    @MessagePattern('stalls_find_active_catalog')
+    async findActiveStallsPublic() {
+        try {
+            const result = await this.stallsService.findActiveStalls();
+            await this.logsService.createLog('stalls_find_active_catalog', 'RPC', null, 200, 'Catálogo público: puestos activos');
+            return { status: 'success',  result };
+        } catch (error) {
+            await this.logsService.createLog('stalls_find_active_catalog', 'RPC', null, 500, error.message);
+            return { status: 'error', message: error.message, statusCode: 500 };
+        }
+    }
 }

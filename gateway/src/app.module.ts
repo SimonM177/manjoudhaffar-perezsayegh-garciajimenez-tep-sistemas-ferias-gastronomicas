@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { MICROSERVICE_USERS, USERS_SERVICE } from './common/constants';
+import { MICROSERVICE_USERS, PRODUCTS_SERVICE, USERS_SERVICE } from './common/constants';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { StallsModule } from './stalls/stalls.module';
+import { ProductsModule } from './products/products.module';
+import { CatalogModule } from './catalog/catalog.module';
 @Module({
   imports: [
 
@@ -26,9 +28,12 @@ import { StallsModule } from './stalls/stalls.module';
       },
       // Otros microservicios aqui
     ]),
+
     AuthModule,
     UsersModule,
     StallsModule,
+    ProductsModule,
+    CatalogModule,
     // El resto de modulos
   ],
   // controllers: [AppController],

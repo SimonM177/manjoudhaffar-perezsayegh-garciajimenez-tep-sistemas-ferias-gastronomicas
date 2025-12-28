@@ -117,4 +117,9 @@ export class StallsService {
         }
         await this.stallRepository.delete(id);
     }
+
+    // Para el catalogo
+    async findActiveStallsPublic() {
+        return this.stallRepository.createQueryBuilder('stall').select(['stall.id', 'stall.name', 'stall.description']).where('stall.status = :status', { status: 'activo' }).getMany();
+    }
 }

@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, UpdateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { OrderItem } from './order-item.entity';
 // Definición de los posibles estados de una orden
 export type OrderStatus = 'pendiente' | 'preparando' | 'listo' | 'entregado';
@@ -8,20 +8,23 @@ export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ name: 'customer_id' })
   customerId: string;
 
-  @Column()
+  @Column({ name: 'stall_id' })
   stallId: string;
 
   @Column({ type: 'varchar' })
   status: OrderStatus;
 
-  @Column({ type: 'numeric', precision: 12, scale: 2 })
+  @Column({ name: 'total', type: 'numeric', precision: 10, scale: 2 })
   totalAmount: string;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  updatedAt: Date;
 
   @OneToMany(() => OrderItem, (item: OrderItem) => item.order, { cascade: true })
   items: OrderItem[];

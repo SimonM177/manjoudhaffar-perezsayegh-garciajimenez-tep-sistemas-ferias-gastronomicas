@@ -14,21 +14,8 @@ import { ApiLog } from './stalls/logs/entities/api-log.entity';
       isGlobal: true,
     }),
 
-    /*ClientsModule.registerAsync([
-      {
-        name: USERS_SERVICE,
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.TCP,
-          options: {
-            host: configService.get('USERS_HOST'),
-            port: configService.get('USERS_PORT'),
-          },
-        }),
-        inject: [ConfigService],
-      },
-    ]),*/
 
-    TypeOrmModule.forRootAsync({
+      TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',

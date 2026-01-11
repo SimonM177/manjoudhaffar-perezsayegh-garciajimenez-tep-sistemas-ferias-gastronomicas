@@ -4,6 +4,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { Repository, DataSource } from 'typeorm';
 import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class OrdersService {
@@ -11,36 +12,72 @@ export class OrdersService {
     @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
     @InjectRepository(OrderItem) private readonly itemRepo: Repository<OrderItem>,
     private readonly dataSource: DataSource,
-    @Inject('PRODUCTS') private readonly productsClient: ClientProxy,
-    @Inject('STALLS') private readonly stallsClient: ClientProxy,
-    @Inject('USERS') private readonly usersClient: ClientProxy,
+    @Inject('PRODUCTS_SERVICE') private readonly productsClient: ClientProxy,
+    @Inject('STALLS_SERVICE') private readonly stallsClient: ClientProxy,
+    @Inject('USERS_SERVICE') private readonly usersClient: ClientProxy,
   ) {}
 
-  async create(userId: string, stallId: string, order: { customerId: string; items: Array<{ productId: string; quantity: number }>; notes?: string }) {
-    // Validate user role/identity
-    await this.usersClient.send('users_validate_identity', { userId }).toPromise();
-    // Validate stall is active
-    await this.stallsClient.send('stalls_validate_active', { stallId }).toPromise();
+  private async validateCustomer(userId: string): Promise<void> {
+    const resp = await firstValueFrom(this.usersClient.send('auth_validate_user', { userId, role: 'cliente' }));
+    if (resp?.status !== 'success') throw new Error('Solo usuarios con rol cliente pueden crear órdenes');
+  }
 
-    // Fetch product info and check stock, compute totals
-    const itemsDetailed: Array<{ productId: string; quantity: number; unitPrice: number; subtotal: number }> = [];
+  private async validateUserRole(userId: string, role: string): Promise<void> {
+    const response = await firstValueFrom(this.usersClient.send('auth_validate_user', { userId, role }));
+    if (response?.status !== 'success') throw new Error('Usuario no tiene el rol adecuado');
+  }
+
+  async create(userId: string, stallId: string, order: { customerId: string; items: Array<{ productId: string; quantity: number }>; notes?: string }) {
+    await this.validateUserRole(userId, 'cliente');
+    await this.validateCustomer(userId);
+
+    if (!stallId) throw new Error('stallId es requerido');
+    if (!order?.customerId) throw new Error('customerId es requerido');
+    if (!Array.isArray(order?.items) || order.items.length === 0) throw new Error('items es requerido');
+
+    // Validar puesto activo usando stalls_find_one (no existe stalls_validate_active)
+    const stallResp = await firstValueFrom(this.stallsClient.send('stalls_find_one', { id: stallId }));
+    if (stallResp?.status !== 'success' || !stallResp.data) {
+      throw new Error(stallResp?.message || `Puesto no encontrado: ${stallId}`);
+    }
+    if (stallResp.data.status !== 'activo') {
+      throw new Error(`Puesto no activo: estado actual '${stallResp.data.status}'`);
+    }
+
+    // Obtener info de productos, validar pertenencia al stall, stock y calcular totales
+    const itemsDetailed: Array<{ productId: string; quantity: number; unitPrice: number; subtotal: number }>= [];
     let total = 0;
+    const productsSnapshot: Record<string, { stock: number; price: string; isAvailable: boolean; stallId: string }> = {};
     for (const item of order.items) {
-      const productResp = await this.productsClient.send('products_find_one', { userId, id: item.productId }).toPromise();
-      if (productResp?.status !== 'success' || !productResp.data) {
-        throw new Error('Producto no encontrado');
+      const pResp = await firstValueFrom(this.productsClient.send('products_find_one', { userId, id: item.productId }));
+      if (pResp?.status !== 'success' || !pResp.data) {
+        throw new Error(pResp?.message || `Producto no encontrado: ${item.productId}`);
       }
-      const product = productResp.data;
-      if (!product.available || product.stock < item.quantity) {
-        throw new Error('Stock insuficiente o producto no disponible');
+      const product = pResp.data;
+      if (product.stallId !== stallId) {
+        throw new Error(`Producto ${product.id} no pertenece al puesto ${stallId}`);
       }
+      if (!product.isAvailable || product.stock < item.quantity) {
+        throw new Error(`Stock insuficiente o producto no disponible: ${product.id}`);
+      }
+      productsSnapshot[item.productId] = { stock: product.stock, price: product.price, isAvailable: product.isAvailable, stallId: product.stallId };
       const unitPrice = Number(product.price);
       const subtotal = unitPrice * item.quantity;
       itemsDetailed.push({ productId: item.productId, quantity: item.quantity, unitPrice, subtotal });
       total += subtotal;
     }
 
-    // Transaction: create order and decrement stock
+    // Descontar stock usando products_update (no existe products_decrement_stock)
+    for (const item of order.items) {
+      const current = productsSnapshot[item.productId];
+      const newStock = current.stock - item.quantity;
+      const updResp = await firstValueFrom(this.productsClient.send('products_update', { userId, id: item.productId, product: { stock: newStock } }));
+      if (updResp?.status !== 'success') {
+        throw new Error(updResp?.message || `No se pudo actualizar stock del producto ${item.productId}`);
+      }
+    }
+
+    // Transacción: guardar la orden y sus items
     return await this.dataSource.transaction(async (manager) => {
       const orderEntity = manager.create(Order, {
         customerId: order.customerId,
@@ -51,20 +88,9 @@ export class OrdersService {
           productId: i.productId,
           quantity: i.quantity,
           unitPrice: i.unitPrice.toFixed(2),
-          subtotal: i.subtotal.toFixed(2),
         })),
       });
-      const saved = await manager.save(orderEntity);
-
-      // Decrement stock via products microservice
-      for (const item of order.items) {
-        const decResp = await this.productsClient.send('products_decrement_stock', { userId, id: item.productId, quantity: item.quantity }).toPromise();
-        if (decResp?.status !== 'success') {
-          throw new Error('No se pudo descontar stock');
-        }
-      }
-
-      return saved;
+      return manager.save(orderEntity);
     });
   }
 

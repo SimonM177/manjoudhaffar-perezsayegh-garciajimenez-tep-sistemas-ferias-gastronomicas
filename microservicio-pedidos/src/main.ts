@@ -1,11 +1,31 @@
 import * as dotenv from 'dotenv';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { Transport } from '@nestjs/microservices';
+import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 dotenv.config();
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 3000);
+
+  const configService = app.get(ConfigService);
+
+  // Connect TCP microservice similar to productos
+  app.connectMicroservice({
+    transport: Transport.TCP,
+    options: {
+      host: configService.get<string>('ORDERS_HOST') ?? 'localhost',
+      port: Number(configService.get<string>('ORDERS_PORT') ?? 3004),
+    },
+  });
+
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }));
+
+  await app.startAllMicroservices();
 }
 bootstrap();

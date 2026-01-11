@@ -7,13 +7,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { StallsModule } from './stalls/stalls.module';
 import { ProductsModule } from './products/products.module';
 import { CatalogModule } from './catalog/catalog.module';
+import { OrdersModule } from './orders/orders.module';
+
 @Module({
   imports: [
-
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-
     ClientsModule.registerAsync([
       {
         name: USERS_SERVICE,
@@ -28,15 +28,12 @@ import { CatalogModule } from './catalog/catalog.module';
       },
       // Otros microservicios aqui
     ]),
-
     AuthModule,
     UsersModule,
     StallsModule,
     ProductsModule,
     CatalogModule,
-    // El resto de modulos
+    OrdersModule,
   ],
-  // controllers: [AppController],
-  // providers: [AppService],
 })
 export class AppModule {}

@@ -118,4 +118,23 @@ export class ProductsService {
         return query.getRawMany();
     }
 
+    async findIdsByFilters(filters: { category?: string; stallId?: string }) {
+        const query = this.productRepository.createQueryBuilder('product').select('product.id', 'id');
+
+        if (filters.category) {
+            query.where('product.category = :category', { category: filters.category });
+        }
+
+        if (filters.stallId) {
+            if (filters.category) {
+                query.andWhere('product.stallId = :stallId', { stallId: filters.stallId });
+            } else {
+                query.where('product.stallId = :stallId', { stallId: filters.stallId });
+            }
+        }
+
+        const rows = await query.getRawMany<{ id: string }>();
+        return rows.map((r) => r.id);
+    }
+
 }

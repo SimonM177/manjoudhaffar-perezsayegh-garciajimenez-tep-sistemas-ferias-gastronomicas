@@ -83,4 +83,28 @@ export class ProductsController {
             return { status: 'error', message: error.message, statusCode: 500 };
         }
     }
+
+    @MessagePattern('products_find_all')
+    async findAll(@Payload() data: { userId: string }) {
+        try {
+            const result = await this.productsService.findAll();
+            await this.logsService.createLog('products_find_all', 'RPC', data.userId, 200, 'Productos obtenidos correctamente');
+            return { status: 'success', data: result };
+        } catch (error) {
+            await this.logsService.createLog('products_find_all', 'RPC', data.userId, 500, error.message);
+            return { status: 'error', message: error.message, statusCode: 500 };
+        }
+    }
+
+    @MessagePattern('products_find_ids_by_filters')
+    async findIdsByFilters(@Payload() data: { userId: string; category?: string; stallId?: string }) {
+        try {
+            const result = await this.productsService.findIdsByFilters({ category: data.category, stallId: data.stallId });
+            await this.logsService.createLog('products_find_ids_by_filters', 'RPC', data.userId, 200, 'IDs de productos obtenidos correctamente');
+            return { status: 'success', data: result };
+        } catch (error) {
+            await this.logsService.createLog('products_find_ids_by_filters', 'RPC', data.userId, 500, error.message);
+            return { status: 'error', message: error.message, statusCode: 500 };
+        }
+    }
 }

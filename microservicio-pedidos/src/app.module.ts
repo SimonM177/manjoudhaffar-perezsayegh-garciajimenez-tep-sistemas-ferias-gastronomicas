@@ -11,7 +11,6 @@ import { Log } from './logs/entities/log.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    // Switch to async configuration to read from .env via ConfigService
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -22,7 +21,7 @@ import { Log } from './logs/entities/log.entity';
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
         entities: [Order, OrderItem, Log],
-        synchronize: true, // habilitar creación automática de tablas
+        synchronize: true,
         logging: true,
       }),
       inject: [ConfigService],

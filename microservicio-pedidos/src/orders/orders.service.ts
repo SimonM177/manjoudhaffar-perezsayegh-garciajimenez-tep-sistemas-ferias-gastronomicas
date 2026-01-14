@@ -112,7 +112,7 @@ export class OrdersService {
     return this.orderRepo.find({ where: { stallId }, relations: ['items'] });
   }
 
-  async getStatistics(filters: {
+  /*async getStatistics(filters: {
     startDate?: string;
     endDate?: string;
     stallId?: string;
@@ -161,18 +161,70 @@ export class OrdersService {
       dailyVolume,
       completedOrders,
     };
+  }*/
+
+  async getStatistics(filters: {
+    startDate?: string;
+    endDate?: string;
+    stallId?: string;
+    status?: string;
+    category?: string;
+  }) {
+    const baseQuery = this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.items', 'item');
+
+    // Aplicar filtros
+    if (filters.startDate) {
+      baseQuery.andWhere('order.createdAt >= :startDate', { startDate: filters.startDate });
+    }
+    if (filters.endDate) {
+      baseQuery.andWhere('order.createdAt <= :endDate', { endDate: filters.endDate });
+    }
+    if (filters.stallId) {
+      baseQuery.andWhere('order.stallId = :stallId', { stallId: filters.stallId });
+    }
+    if (filters.status) {
+      baseQuery.andWhere('order.status = :status', { status: filters.status });
+    }
+
+    // Pedidos recientes
+    const recentOrdersQuery = baseQuery.clone()
+      .orderBy('order.createdAt', 'DESC')
+      .limit(50);
+    const recentOrders = await recentOrdersQuery.getMany();
+
+    // Estadísticas
+    const totalRevenue = await this.getTotalRevenue(baseQuery.clone());
+    const totalOrders = await this.getTotalOrders(baseQuery.clone());
+    const salesByStall = await this.getSalesByStall(baseQuery.clone());
+    const topProducts = await this.getTopProducts(baseQuery.clone());
+    const dailyVolume = await this.getDailyVolume(baseQuery.clone());
+    const completedOrders = await this.getCompletedOrders(baseQuery.clone());
+
+    return {
+      totalRevenue,
+      totalOrders,
+      recentOrders,
+      salesByStall,
+      topProducts,
+      dailyVolume,
+      completedOrders,
+    };
   }
   
   private async getTotalRevenue(baseQuery: SelectQueryBuilder<Order>) {
     const result = await baseQuery
       .select('SUM(order.totalAmount)', 'total')
+      .orderBy()
+      .limit(undefined)
       .getRawOne();
     return parseFloat(result?.total || '0');
   }
   
   private async getTotalOrders(baseQuery: SelectQueryBuilder<Order>) {
-    const result = await baseQuery.getCount();
-    return result;
+    const query = baseQuery.clone().orderBy().limit(undefined);
+    return query.getCount();
   }
   
   private async getSalesByStall(baseQuery: SelectQueryBuilder<Order>) {
@@ -189,7 +241,7 @@ export class OrdersService {
       .select('item.productId', 'productId')
       .addSelect('SUM(item.quantity)', 'totalQuantity')
       .groupBy('item.productId')
-      .orderBy('totalQuantity', 'DESC')
+      .orderBy('SUM(item.quantity)', 'DESC')
       .limit(10)
       .getRawMany();
     return result.map(r => ({ productId: r.productId, totalQuantity: parseInt(r.totalQuantity) }));
@@ -207,9 +259,10 @@ export class OrdersService {
   }
   
   private async getCompletedOrders(baseQuery: SelectQueryBuilder<Order>) {
-    const result = await baseQuery
+    const query = baseQuery.clone()
       .where('order.status = :status', { status: 'entregado' })
-      .getCount();
-    return result;
+      .orderBy()
+      .limit(undefined);
+    return query.getCount();
   }
 }

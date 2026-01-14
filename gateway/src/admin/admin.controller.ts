@@ -14,7 +14,7 @@ export class AdminController {
   @Get('dashboard')
   @UseGuards(AuthGuard('jwt'))
   async getDashboard(
-    @Request() req, // ← Agrega esto para obtener el usuario
+    @Request() req,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('stallId') stallId?: string,

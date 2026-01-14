@@ -13,7 +13,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,        // Elimina propiedades no definidas en el DTO
     forbidNonWhitelisted: true, // Rechaza requests con propiedades extra
-    transform: true,       // Convierte tipos (ej: string → number)
+    transform: true,       // Convierte tipos
   }));
 
   const port = configService.get('PORT');

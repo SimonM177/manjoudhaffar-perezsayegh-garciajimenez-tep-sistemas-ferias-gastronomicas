@@ -108,7 +108,7 @@ export class ProductsController {
     async findAllForAdmin(@Payload()  data: any) {
         try {
             const result = await this.productsService.findAllForAdmin(data.filters);
-            return { status: 'success',  result };
+            return { status: 'success',  data: result };
         } catch (error) {
             return { status: 'error', message: error.message };
         }

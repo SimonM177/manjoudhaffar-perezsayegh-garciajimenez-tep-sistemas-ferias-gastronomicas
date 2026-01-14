@@ -11,7 +11,6 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
-  // Connect TCP microservice similar to productos
   app.connectMicroservice({
     transport: Transport.TCP,
     options: {

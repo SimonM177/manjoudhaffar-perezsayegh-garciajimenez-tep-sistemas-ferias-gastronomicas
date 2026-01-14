@@ -75,7 +75,7 @@ export class OrdersController {
   async getStatistics(@Payload() data: any) {
     try {
       const result = await this.ordersService.getStatistics(data.filters);
-      return { status: 'success',  result };
+      return { status: 'success',  data: result };
     } catch (error) {
       return { status: 'error', message: error.message };
     }

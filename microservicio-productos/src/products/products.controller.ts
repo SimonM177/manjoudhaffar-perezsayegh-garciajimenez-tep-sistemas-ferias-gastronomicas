@@ -2,6 +2,10 @@ import { Controller } from "@nestjs/common";
 import { ProductsService } from "./products.service";
 import { LogsService } from "src/logs/logs.service";
 import { MessagePattern, Payload } from "@nestjs/microservices";
+import { plainToInstance } from "class-transformer";
+import { validate } from "class-validator";
+import { CreateProductDto } from "./dto/create-product.dto";
+import { UpdateProductDto } from "./dto/update-product.dto";
 
 @Controller()
 export class ProductsController {
@@ -14,7 +18,15 @@ export class ProductsController {
     @MessagePattern('products_create')
     async create(@Payload() data: {userId: string; stallId: string; product: any}) {
         try {
-            const result = await this.productsService.create(data.userId, data.stallId, data.product);
+            const productDto = plainToInstance(CreateProductDto, data.product);
+            const errors = await validate(productDto);
+                    
+            if (errors.length > 0) {
+              const errorMessage = errors.map(err => Object.values(err.constraints ?? {})).flat().join(', ');
+              throw new Error(`Validación fallida: ${errorMessage}`);
+            }
+         
+            const result = await this.productsService.create(data.userId, data.stallId, productDto);
             await this.logsService.createLog('products_create', 'RPC', data.userId, 201, 'Producto creado correctamente');
             return { status: 'success', data: result };
         } catch (error) {
@@ -50,7 +62,14 @@ export class ProductsController {
     @MessagePattern('products_update')
     async update(@Payload() data: {userId: string; id: string; product: any}) {
         try {
-            const result = await this.productsService.update(data.userId, data.id, data.product);
+            const productDto = plainToInstance(UpdateProductDto, data.product);
+            const errors = await validate(productDto);
+                    
+            if (errors.length > 0) {
+              const errorMessage = errors.map(err => Object.values(err.constraints ?? {})).flat().join(', ');
+              throw new Error(`Validación fallida: ${errorMessage}`);
+            }
+            const result = await this.productsService.update(data.userId, data.id, productDto);
             await this.logsService.createLog('products_update', 'RPC', data.userId, 200, 'Producto actualizado correctamente');
             return { status: 'success', data: result };
         } catch (error) {
@@ -81,6 +100,17 @@ export class ProductsController {
         } catch (error) {
             await this.logsService.createLog('products_find_available_public', 'RPC', null, 500, error.message);
             return { status: 'error', message: error.message, statusCode: 500 };
+        }
+    }
+    
+    // Para el panel
+    @MessagePattern('products_find_all_admin')
+    async findAllForAdmin(@Payload()  data: any) {
+        try {
+            const result = await this.productsService.findAllForAdmin(data.filters);
+            return { status: 'success',  result };
+        } catch (error) {
+            return { status: 'error', message: error.message };
         }
     }
 }

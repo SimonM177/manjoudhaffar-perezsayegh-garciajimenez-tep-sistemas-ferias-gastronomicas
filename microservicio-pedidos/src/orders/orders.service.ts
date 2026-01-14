@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, SelectQueryBuilder } from 'typeorm';
 import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { firstValueFrom } from 'rxjs';
@@ -71,7 +71,8 @@ export class OrdersService {
     for (const item of order.items) {
       const current = productsSnapshot[item.productId];
       const newStock = current.stock - item.quantity;
-      const updResp = await firstValueFrom(this.productsClient.send('products_update', { userId, id: item.productId, product: { stock: newStock } }));
+      const stallOwner = stallResp.data.ownerId;
+      const updResp = await firstValueFrom(this.productsClient.send('products_update', { userId: stallOwner, id: item.productId, product: { stock: newStock } }));
       if (updResp?.status !== 'success') {
         throw new Error(updResp?.message || `No se pudo actualizar stock del producto ${item.productId}`);
       }
@@ -109,5 +110,106 @@ export class OrdersService {
 
   async findByStall(stallId: string) {
     return this.orderRepo.find({ where: { stallId }, relations: ['items'] });
+  }
+
+  async getStatistics(filters: {
+    startDate?: string;
+    endDate?: string;
+    stallId?: string;
+    status?: string;
+    category?: string;
+  }) {
+    const query = this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.items', 'item');
+  
+    // Aplicar filtros de fecha
+    if (filters.startDate) {
+      query.andWhere('order.createdAt >= :startDate', { startDate: filters.startDate });
+    }
+    if (filters.endDate) {
+      query.andWhere('order.createdAt <= :endDate', { endDate: filters.endDate });
+    }
+  
+    // Filtro por puesto
+    if (filters.stallId) {
+      query.andWhere('order.stallId = :stallId', { stallId: filters.stallId });
+    }
+  
+    // Filtro por estado
+    if (filters.status) {
+      query.andWhere('order.status = :status', { status: filters.status });
+    }
+  
+    // Obtener pedidos recientes
+    const recentOrders = await query.orderBy('order.createdAt', 'DESC').limit(50).getMany();
+  
+    // Estadísticas
+    const totalRevenue = await this.getTotalRevenue(query);
+    const totalOrders = await this.getTotalOrders(query);
+    const salesByStall = await this.getSalesByStall(query);
+    const topProducts = await this.getTopProducts(query);
+    const dailyVolume = await this.getDailyVolume(query);
+    const completedOrders = await this.getCompletedOrders(query);
+  
+    return {
+      totalRevenue,
+      totalOrders,
+      recentOrders,
+      salesByStall,
+      topProducts,
+      dailyVolume,
+      completedOrders,
+    };
+  }
+  
+  private async getTotalRevenue(baseQuery: SelectQueryBuilder<Order>) {
+    const result = await baseQuery
+      .select('SUM(order.totalAmount)', 'total')
+      .getRawOne();
+    return parseFloat(result?.total || '0');
+  }
+  
+  private async getTotalOrders(baseQuery: SelectQueryBuilder<Order>) {
+    const result = await baseQuery.getCount();
+    return result;
+  }
+  
+  private async getSalesByStall(baseQuery: SelectQueryBuilder<Order>) {
+    const result = await baseQuery
+      .select('order.stallId', 'stallId')
+      .addSelect('SUM(order.totalAmount)', 'totalSales')
+      .groupBy('order.stallId')
+      .getRawMany();
+    return result.map(r => ({ stallId: r.stallId, totalSales: parseFloat(r.totalSales) }));
+  }
+  
+  private async getTopProducts(baseQuery: SelectQueryBuilder<Order>) {
+    const result = await baseQuery
+      .select('item.productId', 'productId')
+      .addSelect('SUM(item.quantity)', 'totalQuantity')
+      .groupBy('item.productId')
+      .orderBy('totalQuantity', 'DESC')
+      .limit(10)
+      .getRawMany();
+    return result.map(r => ({ productId: r.productId, totalQuantity: parseInt(r.totalQuantity) }));
+  }
+  
+  private async getDailyVolume(baseQuery: SelectQueryBuilder<Order>) {
+    const result = await baseQuery
+      .select("DATE(order.createdAt)", 'date')
+      .addSelect('SUM(order.totalAmount)', 'dailyTotal')
+      .groupBy("DATE(order.createdAt)")
+      .orderBy("DATE(order.createdAt)", 'DESC')
+      .limit(30)
+      .getRawMany();
+    return result.map(r => ({ date: r.date, dailyTotal: parseFloat(r.dailyTotal) }));
+  }
+  
+  private async getCompletedOrders(baseQuery: SelectQueryBuilder<Order>) {
+    const result = await baseQuery
+      .where('order.status = :status', { status: 'entregado' })
+      .getCount();
+    return result;
   }
 }

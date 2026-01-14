@@ -1,7 +1,11 @@
-import { IsEmail, IsEnum, IsNotEmpty, MinLength } from "class-validator";
+import { IsEmail, IsEnum, IsNotEmpty, IsString, Matches, MinLength } from "class-validator";
 
 export class RegisterDTO {
     @IsNotEmpty()
+    @IsString()
+    @Matches(/^[a-zA-Z\s]+$/, {
+        message: 'El nombre completo solo puede contener letras y espacios',
+    })
     fullname: string;
 
     @IsEmail()

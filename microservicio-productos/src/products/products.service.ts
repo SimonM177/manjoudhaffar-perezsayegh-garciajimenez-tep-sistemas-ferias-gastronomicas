@@ -118,4 +118,19 @@ export class ProductsService {
         return query.getRawMany();
     }
 
+    async findAllForAdmin(filters: any = {}) {
+        const query = this.productRepository.createQueryBuilder('product');
+    
+      // Aplicar filtros
+        if (filters.category) {
+
+            query.andWhere('product.category = :category', { category: filters.category });
+        }
+        if (filters.stallId) {
+            query.andWhere('product.stallId = :stallId', { stallId: filters.stallId });
+        }
+
+        return query.getMany();
+    }    
+
 }

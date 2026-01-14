@@ -128,4 +128,15 @@ export class StallsController {
             return { status: 'error', message: error.message, statusCode: 500 };
         }
     }
+
+    // Para el panel
+    @MessagePattern('stalls_find_all_admin')
+    async findAllForAdmin(@Payload()  data: any) {
+        try {
+            const result = await this.stallsService.findAllForAdmin(data.filters);
+            return { status: 'success', data: result };
+        } catch (error) {
+            return { status: 'error', message: error.message };
+        }
+    }    
 }

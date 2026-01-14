@@ -70,4 +70,14 @@ export class OrdersController {
       return { status: 'error', message: msg, statusCode: 500 };
     }
   }
+
+  @MessagePattern('orders_get_statistics')
+  async getStatistics(@Payload() data: any) {
+    try {
+      const result = await this.ordersService.getStatistics(data.filters);
+      return { status: 'success',  result };
+    } catch (error) {
+      return { status: 'error', message: error.message };
+    }
+  }
 }

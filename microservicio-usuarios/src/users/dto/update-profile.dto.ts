@@ -1,8 +1,12 @@
-import { IsEmail, IsNotEmpty, MinLength, IsOptional } from 'class-validator';
+import { IsEmail, IsNotEmpty, MinLength, IsOptional, IsString, Matches } from 'class-validator';
 
 export class UpdateProfileDto {
     @IsOptional()
     @IsNotEmpty()
+    @IsString()
+    @Matches(/^[a-zA-Z\s]+$/, {
+        message: 'El nombre completo solo puede contener letras y espacios',
+    })
     fullname?: string;
 
     @IsOptional()

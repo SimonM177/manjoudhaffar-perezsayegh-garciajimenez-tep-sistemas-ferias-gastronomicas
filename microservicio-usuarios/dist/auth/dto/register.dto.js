@@ -20,6 +20,11 @@ class RegisterDTO {
 exports.RegisterDTO = RegisterDTO;
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^[a-zA-Z\s]+$/, {
+        message: 'El nombre completo solo puede contener letras y espacios',
+    }),
+    (0, class_validator_1.MinLength)(2),
     __metadata("design:type", String)
 ], RegisterDTO.prototype, "fullname", void 0);
 __decorate([

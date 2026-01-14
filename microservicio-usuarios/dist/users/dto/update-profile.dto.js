@@ -20,6 +20,10 @@ exports.UpdateProfileDto = UpdateProfileDto;
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^[a-zA-Z\s]+$/, {
+        message: 'El nombre completo solo puede contener letras y espacios',
+    }),
     __metadata("design:type", String)
 ], UpdateProfileDto.prototype, "fullname", void 0);
 __decorate([

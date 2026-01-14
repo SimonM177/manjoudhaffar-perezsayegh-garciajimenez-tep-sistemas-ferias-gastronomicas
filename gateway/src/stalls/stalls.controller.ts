@@ -43,7 +43,6 @@ export class StallsController {
     @Patch(':id/approve')
     @UseGuards(AuthGuard('jwt'))
     async approve(@Request() req, @Param('id') id: string) {
-        // Aquí podrías agregar lógica adicional para verificar si el usuario tiene permisos de administrador
         const userId = req.user.userId;
         return this.stallsService.approveStall(userId, id);
     }

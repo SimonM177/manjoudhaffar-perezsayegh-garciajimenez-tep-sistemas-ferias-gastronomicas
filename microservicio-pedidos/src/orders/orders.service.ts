@@ -35,7 +35,6 @@ export class OrdersService {
     if (!order?.customerId) throw new Error('customerId es requerido');
     if (!Array.isArray(order?.items) || order.items.length === 0) throw new Error('items es requerido');
 
-    // Validar puesto activo usando stalls_find_one (no existe stalls_validate_active)
     const stallResp = await firstValueFrom(this.stallsClient.send('stalls_find_one', { id: stallId }));
     if (stallResp?.status !== 'success' || !stallResp.data) {
       throw new Error(stallResp?.message || `Puesto no encontrado: ${stallId}`);
@@ -67,7 +66,7 @@ export class OrdersService {
       total += subtotal;
     }
 
-    // Descontar stock usando products_update (no existe products_decrement_stock)
+    // Descontar stock usando products_update
     for (const item of order.items) {
       const current = productsSnapshot[item.productId];
       const newStock = current.stock - item.quantity;
@@ -111,57 +110,6 @@ export class OrdersService {
   async findByStall(stallId: string) {
     return this.orderRepo.find({ where: { stallId }, relations: ['items'] });
   }
-
-  /*async getStatistics(filters: {
-    startDate?: string;
-    endDate?: string;
-    stallId?: string;
-    status?: string;
-    category?: string;
-  }) {
-    const query = this.orderRepo
-      .createQueryBuilder('order')
-      .leftJoinAndSelect('order.items', 'item');
-  
-    // Aplicar filtros de fecha
-    if (filters.startDate) {
-      query.andWhere('order.createdAt >= :startDate', { startDate: filters.startDate });
-    }
-    if (filters.endDate) {
-      query.andWhere('order.createdAt <= :endDate', { endDate: filters.endDate });
-    }
-  
-    // Filtro por puesto
-    if (filters.stallId) {
-      query.andWhere('order.stallId = :stallId', { stallId: filters.stallId });
-    }
-  
-    // Filtro por estado
-    if (filters.status) {
-      query.andWhere('order.status = :status', { status: filters.status });
-    }
-  
-    // Obtener pedidos recientes
-    const recentOrders = await query.orderBy('order.createdAt', 'DESC').limit(50).getMany();
-  
-    // Estadísticas
-    const totalRevenue = await this.getTotalRevenue(query);
-    const totalOrders = await this.getTotalOrders(query);
-    const salesByStall = await this.getSalesByStall(query);
-    const topProducts = await this.getTopProducts(query);
-    const dailyVolume = await this.getDailyVolume(query);
-    const completedOrders = await this.getCompletedOrders(query);
-  
-    return {
-      totalRevenue,
-      totalOrders,
-      recentOrders,
-      salesByStall,
-      topProducts,
-      dailyVolume,
-      completedOrders,
-    };
-  }*/
 
   async getStatistics(filters: {
     startDate?: string;

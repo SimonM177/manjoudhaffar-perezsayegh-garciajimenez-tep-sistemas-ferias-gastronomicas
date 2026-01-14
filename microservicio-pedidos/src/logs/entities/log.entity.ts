@@ -17,7 +17,6 @@ export class Log {
   @Column({ type: 'int' })
   statusCode: number;
 
-  // Make message non-null with default
   @Column({ type: 'text', default: '' })
   message: string;
 

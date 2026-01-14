@@ -122,4 +122,15 @@ export class StallsService {
     async findActiveStallsPublic() {
         return this.stallRepository.createQueryBuilder('stall').select(['stall.id', 'stall.name', 'stall.description']).where('stall.status = :status', { status: 'activo' }).getMany();
     }
+
+    async findAllForAdmin(filters: any = {}) {
+        const query = this.stallRepository.createQueryBuilder('stall');
+    
+        // Filtros básicos
+        if (filters.status) {
+            query.andWhere('stall.status = :status', { status: filters.status });
+        }
+
+        return query.getMany();
+    }    
 }
